@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-ivory text-ink-800 font-body antialiased;
+    font-feature-settings: 'liga' 1, 'kern' 1;
+  }
+
+  ::selection {
+    @apply bg-champagne-200 text-ink-900;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-display;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-cream;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-champagne-300 rounded-full border-2 border-cream;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-champagne-400;
+  }
+}
+
+@layer components {
+  .container-luxe {
+    @apply mx-auto w-full max-w-[1440px] px-5 sm:px-8 lg:px-12 xl:px-16;
+  }
+
+  .btn-luxe {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-medium tracking-wide transition-all duration-500 ease-luxe disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn-luxe bg-ink-900 text-warmwhite hover:bg-ink-800 hover:shadow-luxe active:scale-[0.98];
+  }
+  .btn-gold {
+    @apply btn-luxe bg-gradient-to-r from-champagne-400 to-gold-500 text-ink-900 hover:shadow-glow hover:brightness-105 active:scale-[0.98];
+  }
+  .btn-outline {
+    @apply btn-luxe border border-ink-300 text-ink-800 hover:border-ink-900 hover:bg-ink-900 hover:text-warmwhite active:scale-[0.98];
+  }
+  .btn-ghost {
+    @apply btn-luxe text-ink-700 hover:bg-ink-100 active:scale-[0.98];
+  }
+
+  .card-luxe {
+    @apply rounded-3xl bg-warmwhite shadow-luxe-sm ring-1 ring-ink-100/60 transition-all duration-500 ease-luxe;
+  }
+
+  .input-luxe {
+    @apply w-full rounded-xl border border-ink-200 bg-warmwhite px-4 py-3 text-sm text-ink-800 placeholder:text-ink-400 transition focus:border-champagne-400 focus:outline-none focus:ring-2 focus:ring-champagne-200;
+  }
+
+  .label-luxe {
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-[0.12em] text-ink-600;
+  }
+
+  .eyebrow {
+    @apply text-xs font-medium uppercase tracking-[0.3em] text-champagne-600;
+  }
+
+  .glass {
+    @apply bg-warmwhite/70 backdrop-blur-xl ring-1 ring-white/60;
+  }
+
+  .link-underline {
+    @apply relative after:absolute after:bottom-0 after:left-0 after:h-px after:w-0 after:bg-current after:transition-all after:duration-300 hover:after:w-full;
+  }
+
+  .skeleton {
+    @apply relative overflow-hidden bg-ink-100/70;
+    background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    background-size: 1000px 100%;
+    @apply animate-shimmer;
+  }
+
+  .text-gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #DCBE6A 0%, #C39F5E 50%, #B8912F 100%);
+  }
+  .text-gradient-rose {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #E0A596 0%, #C06857 100%);
+  }
+}
+
+@layer utilities {
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .perspective {
+    perspective: 1200px;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .mask-fade-r {
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  }
+}
+
+/* Luxury cursor dot */
+.cursor-luxe {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #C39F5E;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.25s, height 0.25s, background 0.25s;
+  mix-blend-mode: difference;
+}
+@media (hover: none) {
+  .cursor-luxe { display: none; }
+}
