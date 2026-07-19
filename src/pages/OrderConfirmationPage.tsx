@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, Package, Truck, Home, ArrowRight, Copy } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useToast } from '../context/ToastContext';
 import type { Order } from '../types';
-import { formatPrice } from '../lib/utils';
+import { supabase } from '../models/supabase';
+import { useToast } from '../controllers/ToastContext';
+import { formatPrice } from '../models/utils';
 
 export function OrderConfirmationPage() {
   const { orderNumber } = useParams<{ orderNumber: string }>();

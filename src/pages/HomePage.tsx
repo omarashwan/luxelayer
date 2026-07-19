@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { fetchBanners, fetchBrands, fetchCategories, fetchFeaturedProducts, fetchTestimonials } from '../lib/api';
+import { fetchBanners, fetchBrands, fetchCategories, fetchFeaturedProducts, fetchTestimonials } from '../models/api';
 import type { Banner, Brand, Category, Product, Testimonial } from '../types';
 import { Hero } from '../components/home/Hero';
 import { CategoryGrid } from '../components/home/CategoryGrid';

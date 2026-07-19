@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Instagram, Mail, Phone, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
-import { subscribeNewsletter } from '../../lib/api';
-import { useToast } from '../../context/ToastContext';
+import { subscribeNewsletter } from '../../models/api';
+import { useToast } from '../../controllers/ToastContext';
 
 export function Footer() {
   const { toast } = useToast();

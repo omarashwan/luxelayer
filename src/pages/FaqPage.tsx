@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, ChevronDown } from 'lucide-react';
-import { fetchFaqs } from '../lib/api';
+import { fetchFaqs } from '../models/api';
 import { Reveal } from '../components/ui/Reveal';
-import { classNames } from '../lib/utils';
+import { classNames } from '../models/utils';
 
 interface Faq {
   id: string;

@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlidersHorizontal, X, ChevronDown, Check, Home } from 'lucide-react';
-import { fetchBrands, fetchCategories, fetchProducts } from '../lib/api';
+import { fetchBrands, fetchCategories, fetchProducts } from '../models/api';
 import type { Brand, Category, Product } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';
-import { classNames } from '../lib/utils';
+import { classNames } from '../models/utils';
 
 const SORT_OPTIONS = [
   { value: 'featured', label: 'Featured' },

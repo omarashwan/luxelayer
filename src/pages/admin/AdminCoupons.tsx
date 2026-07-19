@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Trash2, X, Save, Ticket, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../lib/supabase';
-import { useToast } from '../../context/ToastContext';
+import { supabase } from '../../models/supabase';
+import { useToast } from '../../controllers/ToastContext';
 import type { Coupon } from '../../types';
-import { classNames, formatPrice } from '../../lib/utils';
+import { classNames, formatPrice } from '../../models/utils';
 
 export function AdminCoupons() {
   const { toast } = useToast();

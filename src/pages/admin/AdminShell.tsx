@@ -4,8 +4,8 @@ import {
   LayoutDashboard, Package, ShoppingBag, Tags, FolderTree, Image as ImageIcon,
   Users, Ticket, LogOut, Menu, X, ExternalLink, Bell,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
-import { classNames, initials } from '../../lib/utils';
+import { useAuth } from '../../controllers/AuthContext';
+import { classNames, initials } from '../../models/utils';
 
 interface NavItem {
   id: string;

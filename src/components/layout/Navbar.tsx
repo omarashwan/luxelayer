@@ -11,12 +11,12 @@ import {
   ChevronDown,
   Sparkles,
 } from 'lucide-react';
-import { useCart } from '../../context/CartContext';
-import { useAuth } from '../../context/AuthContext';
-import { useWishlist } from '../../context/WishlistContext';
-import { fetchSearchSuggestions } from '../../lib/api';
 import type { Category, Product } from '../../types';
-import { classNames, formatPrice, effectivePrice } from '../../lib/utils';
+import { useCart } from '../../controllers/CartContext';
+import { useAuth } from '../../controllers/AuthContext';
+import { useWishlist } from '../../controllers/WishlistContext';
+import { fetchSearchSuggestions } from '../../models/api';
+import { classNames, formatPrice, effectivePrice } from '../../models/utils';
 
 interface NavbarProps {
   categories: Category[];

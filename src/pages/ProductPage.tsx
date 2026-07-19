@@ -16,15 +16,15 @@ import {
   Home,
   ZoomIn,
 } from 'lucide-react';
-import { fetchProductBySlug, fetchRelatedProducts, fetchReviews, createReview } from '../lib/api';
+import { fetchProductBySlug, fetchRelatedProducts, fetchReviews, createReview } from '../models/api';
 import type { Product, Review, Shade, Size } from '../types';
-import { useCart } from '../context/CartContext';
-import { useWishlist } from '../context/WishlistContext';
-import { useToast } from '../context/ToastContext';
-import { useAuth } from '../context/AuthContext';
+import { useCart } from '../controllers/CartContext';
+import { useWishlist } from '../controllers/WishlistContext';
+import { useToast } from '../controllers/ToastContext';
+import { useAuth } from '../controllers/AuthContext';
 import { ProductCard } from '../components/ui/ProductCard';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';
-import { classNames, discountPercent, effectivePrice, formatPrice, timeAgo } from '../lib/utils';
+import { classNames, discountPercent, effectivePrice, formatPrice, timeAgo } from '../models/utils';
 
 const RECENTLY_VIEWED_KEY = 'luxelayer.recently_viewed.v1';
 

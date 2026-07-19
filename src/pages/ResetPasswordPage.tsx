@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Lock, Eye, EyeOff, ArrowRight, CheckCircle2, AlertCircle, Sparkles, ShieldCheck } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
+import { supabase } from '../models/supabase';
+import { useAuth } from '../controllers/AuthContext';
+import { useToast } from '../controllers/ToastContext';
 
 type Stage = 'checking' | 'valid' | 'invalid' | 'success';
 type Strength = { score: number; label: string; color: string };

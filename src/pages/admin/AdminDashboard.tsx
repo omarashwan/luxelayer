@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DollarSign, ShoppingBag, Package, Users, TrendingUp, AlertTriangle, ArrowUpRight, Star } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { formatPrice, classNames } from '../../lib/utils';
+import { supabase } from '../../models/supabase';
+import { formatPrice, classNames } from '../../models/utils';
 
 interface Stats {
   revenue: number;

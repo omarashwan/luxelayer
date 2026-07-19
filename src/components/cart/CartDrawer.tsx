@@ -2,9 +2,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { X, ShoppingBag, Minus, Plus, Trash2, Tag, Gift, Truck, ArrowRight } from 'lucide-react';
 import { useState } from 'react';
-import { useCart } from '../../context/CartContext';
-import { useToast } from '../../context/ToastContext';
-import { classNames, formatPrice } from '../../lib/utils';
+import { useCart } from '../../controllers/CartContext';
+import { useToast } from '../../controllers/ToastContext';
+import { classNames, formatPrice } from '../../models/utils';
 
 export function CartDrawer() {
   const {

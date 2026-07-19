@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { classNames } from '../lib/utils';
+import { useAuth } from '../controllers/AuthContext';
+import { useToast } from '../controllers/ToastContext';
+import { classNames } from '../models/utils';
 
 export function AuthPage() {
   const { signIn, signUp } = useAuth();

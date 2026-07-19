@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
-import { ToastProvider } from './context/ToastContext';
-import { WishlistProvider } from './context/WishlistContext';
+import { AuthProvider, useAuth } from './controllers/AuthContext';
+import { CartProvider } from './controllers/CartContext';
+import { ToastProvider } from './controllers/ToastContext';
+import { WishlistProvider } from './controllers/WishlistContext';
 import { Layout } from './components/layout/Layout';
 import { Toaster } from './components/ui/Toaster';
 import { HomePage } from './pages/HomePage';

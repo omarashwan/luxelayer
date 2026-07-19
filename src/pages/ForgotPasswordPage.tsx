@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, ArrowRight, ArrowLeft, CheckCircle2, Sparkles } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
+import { useAuth } from '../controllers/AuthContext';
+import { useToast } from '../controllers/ToastContext';
 
 type Status = 'form' | 'sent';
 

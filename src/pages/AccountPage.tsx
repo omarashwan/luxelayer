@@ -4,15 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package, Heart, MapPin, Settings, Bell, Star, Truck, Check, LogOut, Plus, Trash2, Eye, EyeOff,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useWishlist } from '../context/WishlistContext';
-import { useToast } from '../context/ToastContext';
-import { supabase } from '../lib/supabase';
-import { fetchProductsByIds } from '../lib/api';
+import { useAuth } from '../controllers/AuthContext';
+import { useWishlist } from '../controllers/WishlistContext';
+import { useToast } from '../controllers/ToastContext';
+import { supabase } from '../models/supabase';
+import { fetchProductsByIds } from '../models/api';
 import type { Address, Notification, Order, Product } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';
-import { classNames, formatPrice, timeAgo, initials } from '../lib/utils';
+import { classNames, formatPrice, timeAgo, initials } from '../models/utils';
 
 type Tab = 'orders' | 'wishlist' | 'addresses' | 'notifications' | 'settings';
 

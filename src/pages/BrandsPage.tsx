@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home } from 'lucide-react';
-import { fetchBrands } from '../lib/api';
+import { fetchBrands } from '../models/api';
 import type { Brand } from '../types';
 import { Reveal } from '../components/ui/Reveal';
 import { Skeleton } from '../components/ui/Skeleton';

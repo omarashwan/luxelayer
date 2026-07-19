@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronLeft, CreditCard, Truck, Gift, Lock, ShoppingBag } from 'lucide-react';
-import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
-import { supabase } from '../lib/supabase';
-import { generateOrderNumber, formatPrice, classNames } from '../lib/utils';
+import { useCart } from '../controllers/CartContext';
+import { useAuth } from '../controllers/AuthContext';
+import { useToast } from '../controllers/ToastContext';
+import { supabase } from '../models/supabase';
+import { generateOrderNumber, formatPrice, classNames } from '../models/utils';
 import type { Order } from '../types';
 
 type Step = 'shipping' | 'billing' | 'payment' | 'review' | 'confirmation';

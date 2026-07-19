@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Home, Mail, Phone, MapPin, Send } from 'lucide-react';
-import { submitContact } from '../lib/api';
-import { useToast } from '../context/ToastContext';
+import { submitContact } from '../models/api';
+import { useToast } from '../controllers/ToastContext';
 import { Reveal } from '../components/ui/Reveal';
 
 export function ContactPage() {

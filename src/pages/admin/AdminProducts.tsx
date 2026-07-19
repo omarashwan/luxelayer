@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Pencil, Trash2, X, Package, Copy } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useToast } from '../../context/ToastContext';
+import { supabase } from '../../models/supabase';
+import { useToast } from '../../controllers/ToastContext';
 import type { Brand, Category, Product, Size } from '../../types';
-import { classNames, discountPercent, effectivePrice, formatPrice, slugify } from '../../lib/utils';
+import { classNames, discountPercent, effectivePrice, formatPrice, slugify } from '../../models/utils';
 
 interface SizeDraft {
   name: string;

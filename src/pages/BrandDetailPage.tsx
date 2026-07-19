@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Home, ArrowLeft } from 'lucide-react';
-import { fetchBrandBySlug, fetchProducts } from '../lib/api';
+import { fetchBrandBySlug, fetchProducts } from '../models/api';
 import type { Brand, Product } from '../types';
 import { ProductCard } from '../components/ui/ProductCard';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';

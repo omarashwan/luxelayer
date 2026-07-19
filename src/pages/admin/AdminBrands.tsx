@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Pencil, Trash2, X, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../lib/supabase';
-import { useToast } from '../../context/ToastContext';
+import { supabase } from '../../models/supabase';
+import { useToast } from '../../controllers/ToastContext';
 import type { Brand } from '../../types';
-import { slugify } from '../../lib/utils';
+import { slugify } from '../../models/utils';
 
 export function AdminBrands() {
   const { toast } = useToast();

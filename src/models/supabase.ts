@@ -20,7 +20,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-// Admin edge-function helper: call a deployed edge function with the current session.
 export async function callEdgeFunction<T = unknown>(name: string, body?: unknown): Promise<T> {
   if (!isSupabaseConfigured) {
     throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable live data.');

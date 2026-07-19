@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Search, ShieldCheck, Trash2 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useToast } from '../../context/ToastContext';
-import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../models/supabase';
+import { useToast } from '../../controllers/ToastContext';
+import { useAuth } from '../../controllers/AuthContext';
 import type { Profile } from '../../types';
-import { classNames, initials, timeAgo } from '../../lib/utils';
+import { classNames, initials, timeAgo } from '../../models/utils';
 
 export function AdminCustomers() {
   const { toast } = useToast();

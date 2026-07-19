@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { CartDrawer } from '../cart/CartDrawer';
-import { fetchCategories } from '../../lib/api';
+import { fetchCategories } from '../../models/api';
 import type { Category } from '../../types';
 
 export function Layout() {
