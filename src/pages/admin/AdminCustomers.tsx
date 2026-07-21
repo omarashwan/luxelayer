@@ -6,6 +6,8 @@ import { useAuth } from '../../controllers/AuthContext';
 import type { Profile } from '../../types';
 import { classNames, initials, timeAgo } from '../../models/utils';
 
+const ADMIN_DATA_CHANGED_EVENT = 'luxelayer:admin-data-changed';
+
 export function AdminCustomers() {
   const { toast } = useToast();
   const { profile: me } = useAuth();
@@ -34,7 +36,7 @@ export function AdminCustomers() {
   const toggleAdmin = async (p: Profile) => {
     const { error } = await supabase.from('profiles').update({ is_admin: !p.is_admin }).eq('id', p.id);
     if (error) toast(error.message, 'error');
-    else { toast(`${p.first_name ?? p.email} ${p.is_admin ? 'demoted' : 'promoted to admin'}`); load(); }
+    else { toast(`${p.first_name ?? p.email} ${p.is_admin ? 'demoted' : 'promoted to admin'}`); window.dispatchEvent(new CustomEvent(ADMIN_DATA_CHANGED_EVENT)); load(); }
   };
 
   const filtered = profiles.filter((p) =>

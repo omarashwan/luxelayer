@@ -98,7 +98,7 @@ export function Footer() {
               sourced directly from the houses that make them.
             </p>
             <div className="mt-6 flex items-center gap-3">
-              <a href="#" aria-label="Instagram" className="flex h-10 w-10 items-center justify-center rounded-full bg-warmwhite text-ink-700 ring-1 ring-ink-100 transition hover:bg-ink-900 hover:text-warmwhite">
+              <a href="https://www.instagram.com/luxelayer.eg/" target="_blank" rel="noreferrer" aria-label="Instagram" className="flex h-10 w-10 items-center justify-center rounded-full bg-warmwhite text-ink-700 ring-1 ring-ink-100 transition hover:bg-ink-900 hover:text-warmwhite">
                 <Instagram className="h-4 w-4" />
               </a>
               <a href="mailto:clientcare@luxelayer.com" aria-label="Email" className="flex h-10 w-10 items-center justify-center rounded-full bg-warmwhite text-ink-700 ring-1 ring-ink-100 transition hover:bg-ink-900 hover:text-warmwhite">

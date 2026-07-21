@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { DollarSign, ShoppingBag, Package, Users, TrendingUp, AlertTriangle, ArrowUpRight, Star } from 'lucide-react';
 import { supabase } from '../../models/supabase';
 import { formatPrice, classNames } from '../../models/utils';
+
+const ADMIN_DATA_CHANGED_EVENT = 'luxelayer:admin-data-changed';
 
 interface Stats {
   revenue: number;
@@ -19,50 +21,93 @@ export function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [orders, products, profiles, lowStock, recentOrders] = await Promise.all([
-          supabase.from('orders').select('total, status, created_at'),
-          supabase.from('products').select('id, name, stock, price, is_published, featured_image_url'),
-          supabase.from('profiles').select('id, is_admin'),
-          supabase.from('products').select('id, name, stock, featured_image_url').lt('stock', 10).eq('is_published', true).order('stock', { ascending: true }).limit(5),
-          supabase.from('orders').select('order_number, email, total, status, created_at').order('created_at', { ascending: false }).limit(6),
-        ]);
-
-        const revenue = (orders.data ?? []).reduce((sum: number, o: { total: number }) => sum + Number(o.total), 0);
-        const customers = (profiles.data ?? []).filter((p: { is_admin: boolean }) => !p.is_admin).length;
-
-        // Top products by order_items
-        const { data: topItems } = await supabase.from('order_items').select('name, quantity, total, image_url');
-        const productMap = new Map<string, { name: string; total: number; qty: number; image: string | null }>();
-        (topItems ?? []).forEach((it: { name: string; quantity: number; total: number; image_url: string | null }) => {
-          const existing = productMap.get(it.name);
-          if (existing) {
-            existing.qty += it.quantity;
-            existing.total += Number(it.total);
-          } else {
-            productMap.set(it.name, { name: it.name, qty: it.quantity, total: Number(it.total), image: it.image_url });
-          }
-        });
-        const topProducts = [...productMap.values()].sort((a, b) => b.qty - a.qty).slice(0, 5);
-
+  const load = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_admin_dashboard_stats');
+      if (!error && data) {
+        const payload = data as Partial<Stats>;
         setStats({
-          revenue,
-          orders: orders.data?.length ?? 0,
-          products: (products.data ?? []).filter((p: { is_published: boolean }) => p.is_published).length,
-          customers,
-          lowStock: lowStock.data ?? [],
-          topProducts,
-          recentOrders: recentOrders.data ?? [],
+          revenue: Number(payload.revenue ?? 0),
+          orders: Number(payload.orders ?? 0),
+          products: Number(payload.products ?? 0),
+          customers: Number(payload.customers ?? 0),
+          lowStock: Array.isArray(payload.lowStock) ? payload.lowStock : [],
+          topProducts: Array.isArray(payload.topProducts) ? payload.topProducts : [],
+          recentOrders: Array.isArray(payload.recentOrders) ? payload.recentOrders : [],
         });
-      } catch (err) {
-        console.error('Admin stats error', err);
-      } finally {
-        setLoading(false);
+        return;
       }
-    })();
+
+      const [ordersCount, revenueOrders, productsCount, customersCount, lowStock, recentOrders] = await Promise.all([
+        supabase.from('orders').select('id', { count: 'exact', head: true }),
+        supabase.from('orders').select('total, status, payment_status'),
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('is_published', true),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_admin', false),
+        supabase.from('products').select('id, name, stock, featured_image_url').lt('stock', 10).eq('is_published', true).order('stock', { ascending: true }).limit(5),
+        supabase.from('orders').select('order_number, email, total, status, created_at').order('created_at', { ascending: false }).limit(6),
+      ]);
+
+      const revenue = (revenueOrders.data ?? []).reduce((sum: number, o: { total: number; status?: string; payment_status?: string }) => {
+        const isRevenueOrder = o.payment_status === 'paid' || o.payment_status === 'deposit_paid' || o.status === 'delivered';
+        return isRevenueOrder ? sum + Number(o.total) : sum;
+      }, 0);
+
+      const { data: topItems } = await supabase.from('order_items').select('name, quantity, total, image_url');
+      const productMap = new Map<string, { name: string; total: number; qty: number; image: string | null }>();
+      (topItems ?? []).forEach((it: { name: string; quantity: number; total: number; image_url: string | null }) => {
+        const existing = productMap.get(it.name);
+        if (existing) {
+          existing.qty += it.quantity;
+          existing.total += Number(it.total);
+        } else {
+          productMap.set(it.name, { name: it.name, qty: it.quantity, total: Number(it.total), image: it.image_url });
+        }
+      });
+
+      setStats({
+        revenue,
+        orders: ordersCount.count ?? 0,
+        products: productsCount.count ?? 0,
+        customers: customersCount.count ?? 0,
+        lowStock: lowStock.data ?? [],
+        topProducts: [...productMap.values()].sort((a, b) => b.qty - a.qty).slice(0, 5),
+        recentOrders: recentOrders.data ?? [],
+      });
+    } catch (err) {
+      console.error('Admin stats error', err);
+      setStats({
+        revenue: 0,
+        orders: 0,
+        products: 0,
+        customers: 0,
+        lowStock: [],
+        topProducts: [],
+        recentOrders: [],
+      });
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+    const refresh = () => load();
+    window.addEventListener('focus', refresh);
+    window.addEventListener(ADMIN_DATA_CHANGED_EVENT, refresh as EventListener);
+    const intervalId = window.setInterval(refresh, 15000);
+    const channel = supabase
+      .channel('admin-dashboard-metrics')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, refresh)
+      .subscribe();
+    return () => {
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener(ADMIN_DATA_CHANGED_EVENT, refresh as EventListener);
+      window.clearInterval(intervalId);
+      supabase.removeChannel(channel);
+    };
+  }, [load]);
 
   if (loading || !stats) {
     return <div className="flex h-64 items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-champagne-300 border-t-champagne-500" /></div>;

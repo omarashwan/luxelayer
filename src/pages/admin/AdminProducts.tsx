@@ -6,6 +6,8 @@ import { useToast } from '../../controllers/ToastContext';
 import type { Brand, Category, Product, Size } from '../../types';
 import { classNames, discountPercent, effectivePrice, formatPrice, slugify } from '../../models/utils';
 
+const ADMIN_DATA_CHANGED_EVENT = 'luxelayer:admin-data-changed';
+
 interface SizeDraft {
   name: string;
   volume: string;
@@ -52,7 +54,7 @@ export function AdminProducts({}: Props) {
     if (!confirm(`Delete "${p.name}"? This cannot be undone.`)) return;
     const { error } = await supabase.from('products').delete().eq('id', p.id);
     if (error) toast(error.message, 'error');
-    else { toast('Product deleted'); load(); }
+    else { toast('Product deleted'); window.dispatchEvent(new CustomEvent(ADMIN_DATA_CHANGED_EVENT)); load(); }
   };
 
   const onDuplicate = async (p: Product) => {
@@ -66,7 +68,7 @@ export function AdminProducts({}: Props) {
       stock: 0,
     });
     if (error) toast(error.message, 'error');
-    else { toast('Product duplicated'); load(); }
+    else { toast('Product duplicated'); window.dispatchEvent(new CustomEvent(ADMIN_DATA_CHANGED_EVENT)); load(); }
   };
 
   const onSave = async (data: Partial<Product>, sizes: SizeDraft[]) => {
@@ -110,6 +112,7 @@ export function AdminProducts({}: Props) {
 
     setShowForm(false);
     setEditing(null);
+    window.dispatchEvent(new CustomEvent(ADMIN_DATA_CHANGED_EVENT));
     load();
   };
 

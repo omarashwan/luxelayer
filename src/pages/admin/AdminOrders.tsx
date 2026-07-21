@@ -6,6 +6,8 @@ import { useToast } from '../../controllers/ToastContext';
 import type { Order } from '../../types';
 import { classNames, formatPrice, timeAgo } from '../../models/utils';
 
+const ADMIN_DATA_CHANGED_EVENT = 'luxelayer:admin-data-changed';
+
 const STATUS_OPTIONS: Order['status'][] = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'returned'];
 
 export function AdminOrders() {
@@ -35,13 +37,13 @@ export function AdminOrders() {
   const updateStatus = async (id: string, status: Order['status']) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', id);
     if (error) toast(error.message, 'error');
-    else { toast('Order status updated'); load(); if (viewing?.id === id) setViewing((v) => v ? { ...v, status } : null); }
+    else { toast('Order status updated'); window.dispatchEvent(new CustomEvent(ADMIN_DATA_CHANGED_EVENT)); load(); if (viewing?.id === id) setViewing((v) => v ? { ...v, status } : null); }
   };
 
   const updateTracking = async (id: string, tracking: string) => {
     const { error } = await supabase.from('orders').update({ tracking_number: tracking }).eq('id', id);
     if (error) toast(error.message, 'error');
-    else { toast('Tracking number saved'); load(); }
+    else { toast('Tracking number saved'); window.dispatchEvent(new CustomEvent(ADMIN_DATA_CHANGED_EVENT)); load(); }
   };
 
   return (

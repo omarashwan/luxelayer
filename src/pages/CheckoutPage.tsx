@@ -1,51 +1,95 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronLeft, CreditCard, Truck, Gift, Lock, ShoppingBag } from 'lucide-react';
+import { BadgePercent, Banknote, Check, ChevronLeft, CreditCard, Gift, Lock, ShoppingBag, ShieldCheck, Truck } from 'lucide-react';
 import { useCart } from '../controllers/CartContext';
 import { useAuth } from '../controllers/AuthContext';
 import { useToast } from '../controllers/ToastContext';
-import { supabase } from '../models/supabase';
-import { generateOrderNumber, formatPrice, classNames } from '../models/utils';
-import type { Order } from '../types';
+import { formatPrice, classNames } from '../models/utils';
 
-type Step = 'shipping' | 'billing' | 'payment' | 'review' | 'confirmation';
+const CHECKOUT_DRAFT_KEY = 'luxelayer.checkout.draft.v1';
+
+type Step = 'shipping' | 'payment';
+type PaymentMethod = 'card' | 'cash_on_delivery';
 
 const STEPS: { id: Step; label: string }[] = [
   { id: 'shipping', label: 'Shipping' },
-  { id: 'billing', label: 'Billing' },
   { id: 'payment', label: 'Payment' },
-  { id: 'review', label: 'Review' },
 ];
 
+function readCheckoutDraft(): { ship?: Partial<ShippingForm>; paymentMethod?: PaymentMethod; step?: Step } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+    return raw ? (JSON.parse(raw) as { ship?: Partial<ShippingForm>; paymentMethod?: PaymentMethod; step?: Step }) : null;
+  } catch {
+    return null;
+  }
+}
+
+interface ShippingForm {
+  firstName: string;
+  lastName: string;
+  email: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  phone: string;
+  method: string;
+}
+
+function getPaymentsApiBaseUrl() {
+  const configured = import.meta.env.VITE_PAYMENTS_API_BASE_URL?.trim();
+  if (configured) return configured.replace(/\/$/, '');
+  return import.meta.env.DEV ? 'http://localhost:4000' : window.location.origin;
+}
+
 export function CheckoutPage() {
-  const { items, subtotal, discount, shipping, tax, total, giftWrap, appliedCoupon, clearCart } = useCart();
+  const { items, subtotal, discount, shipping, tax, total, giftWrap, appliedCoupon } = useCart();
   const { session, profile } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const draft = useMemo(() => readCheckoutDraft(), []);
 
-  const [step, setStep] = useState<Step>('shipping');
+  const [step, setStep] = useState<Step>(draft?.step ?? 'shipping');
   const [submitting, setSubmitting] = useState(false);
-  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(draft?.paymentMethod ?? 'card');
 
-  const [ship, setShip] = useState({
-    firstName: profile?.first_name ?? '',
-    lastName: profile?.last_name ?? '',
-    email: profile?.email ?? session?.user?.email ?? '',
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'United States',
-    phone: '',
-    method: 'standard',
+  const [ship, setShip] = useState<ShippingForm>({
+    firstName: draft?.ship?.firstName ?? profile?.first_name ?? '',
+    lastName: draft?.ship?.lastName ?? profile?.last_name ?? '',
+    email: draft?.ship?.email ?? profile?.email ?? session?.user?.email ?? '',
+    address1: draft?.ship?.address1 ?? '',
+    address2: draft?.ship?.address2 ?? '',
+    city: draft?.ship?.city ?? '',
+    state: draft?.ship?.state ?? '',
+    postalCode: draft?.ship?.postalCode ?? '',
+    country: draft?.ship?.country ?? 'United States',
+    phone: draft?.ship?.phone ?? '',
+    method: draft?.ship?.method ?? 'standard',
   });
-  const [billingSame, setBillingSame] = useState(true);
-  const [payment, setPayment] = useState({ method: 'card', cardName: '', cardNumber: '', expiry: '', cvc: '' });
-  const [giftNote, setGiftNote] = useState('');
 
-  if (items.length === 0 && step !== 'confirmation') {
+  const paymentFailed = useMemo(() => new URLSearchParams(location.search).get('payment') === 'failed', [location.search]);
+
+  useEffect(() => {
+    if (paymentFailed) {
+      setStep('payment');
+    }
+  }, [paymentFailed]);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(CHECKOUT_DRAFT_KEY, JSON.stringify({ ship, paymentMethod, step }));
+    } catch {
+      // ignore
+    }
+  }, [ship, paymentMethod, step]);
+
+  if (items.length === 0 && step !== 'payment') {
     return (
       <div className="container-luxe flex min-h-[60vh] flex-col items-center justify-center text-center">
         <ShoppingBag className="h-12 w-12 text-ink-300" />
@@ -59,78 +103,61 @@ export function CheckoutPage() {
   const currentIdx = STEPS.findIndex((s) => s.id === step);
 
   const next = () => {
-    const idx = STEPS.findIndex((s) => s.id === step);
-    if (idx < STEPS.length - 1) setStep(STEPS[idx + 1].id);
-  };
-  const prev = () => {
-    const idx = STEPS.findIndex((s) => s.id === step);
-    if (idx > 0) setStep(STEPS[idx - 1].id);
-  };
-
-  const placeOrder = async () => {
-    setSubmitting(true);
-    const orderNumber = generateOrderNumber();
-    const orderInsert = {
-      order_number: orderNumber,
-      user_id: session?.user?.id ?? null,
-      email: ship.email,
-      status: 'processing',
-      subtotal,
-      discount,
-      shipping,
-      tax,
-      total,
-      coupon_code: appliedCoupon?.code ?? null,
-      shipping_first_name: ship.firstName,
-      shipping_last_name: ship.lastName,
-      shipping_address1: ship.address1,
-      shipping_address2: ship.address2,
-      shipping_city: ship.city,
-      shipping_state: ship.state,
-      shipping_postal_code: ship.postalCode,
-      shipping_country: ship.country,
-      shipping_phone: ship.phone,
-      shipping_method: ship.method,
-      payment_method: payment.method,
-      payment_status: 'paid',
-      gift_wrap: giftWrap,
-      notes: giftNote,
-    };
-
-    try {
-      const { data: order, error } = await supabase.from('orders').insert(orderInsert).select().single();
-      if (error || !order) throw new Error(error?.message ?? 'Failed to create order');
-
-      const itemsInsert = items.map((i) => ({
-        order_id: order.id,
-        product_id: i.productId,
-        name: i.name,
-        slug: i.slug,
-        image_url: i.image,
-        shade: i.shadeName,
-        size: i.sizeName,
-        unit_price: i.price,
-        quantity: i.quantity,
-        total: i.price * i.quantity,
-      }));
-      const { error: itemsError } = await supabase.from('order_items').insert(itemsInsert);
-      if (itemsError) throw new Error(itemsError.message);
-
-      setCreatedOrder(order as Order);
-      clearCart();
-      setStep('confirmation');
-      toast('Order placed successfully');
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'Failed to place order', 'error');
-    } finally {
-      setSubmitting(false);
+    if (step === 'shipping') {
+      setStep('payment');
     }
   };
 
-  if (step === 'confirmation' && createdOrder) {
-    navigate(`/order/${createdOrder.order_number}`);
-    return null;
-  }
+  const prev = () => {
+    if (step === 'payment') {
+      setStep('shipping');
+    }
+  };
+
+  const submitPayment = async () => {
+    setSubmitting(true);
+    try {
+      const accessToken = session?.access_token ?? '';
+      if (!accessToken) {
+        throw new Error('Please sign in before checkout.');
+      }
+      if (!ship.phone.trim()) {
+        throw new Error('Please add a phone number before checkout.');
+      }
+      const response = await fetch(`${getPaymentsApiBaseUrl()}/api/payments/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            shadeId: item.shadeId,
+            sizeId: item.sizeId,
+          })),
+          shipping: ship,
+          paymentMethod,
+          couponCode: appliedCoupon?.code ?? '',
+          giftWrap,
+          giftNote: '',
+          userId: session?.user?.id ?? null,
+          accessToken,
+        }),
+      });
+
+      const data = await response.json() as { success?: boolean; message?: string; paymentUrl?: string };
+      if (!response.ok || !data.success || !data.paymentUrl) {
+        throw new Error(data.message || 'Unable to start Paymob checkout.');
+      }
+
+      window.location.assign(data.paymentUrl);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Unable to start payment', 'error');
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-ivory">
@@ -144,7 +171,12 @@ export function CheckoutPage() {
       </div>
 
       <div className="container-luxe py-10">
-        {/* Stepper */}
+        {paymentFailed && (
+          <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            Payment failed or was cancelled. Your order was not marked as paid. Please try again.
+          </div>
+        )}
+
         <div className="mb-10 flex items-center justify-center gap-2 sm:gap-4">
           {STEPS.map((s, i) => (
             <div key={s.id} className="flex items-center gap-2 sm:gap-4">
@@ -171,7 +203,6 @@ export function CheckoutPage() {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
-          {/* Form */}
           <div className="lg:col-span-2">
             <AnimatePresence mode="wait">
               {step === 'shipping' && (
@@ -213,87 +244,69 @@ export function CheckoutPage() {
                     </div>
                   </div>
 
-                  <button onClick={next} disabled={!ship.firstName || !ship.lastName || !ship.email || !ship.address1 || !ship.city || !ship.postalCode} className="btn-primary mt-6">
-                    Continue to Billing
+                    <button onClick={next} disabled={!ship.firstName || !ship.lastName || !ship.email || !ship.address1 || !ship.city || !ship.postalCode || !ship.phone} className="btn-primary mt-6">
+                    Continue to Payment
                   </button>
-                </motion.div>
-              )}
-
-              {step === 'billing' && (
-                <motion.div key="billing" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <h2 className="mb-5 font-display text-xl font-medium text-ink-900">Billing Address</h2>
-                  <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-ink-200 p-4 transition has-[:checked]:border-champagne-500 has-[:checked]:bg-champagne-50">
-                    <input type="checkbox" checked={billingSame} onChange={(e) => setBillingSame(e.target.checked)} className="peer sr-only" />
-                    <span className="flex h-5 w-5 items-center justify-center rounded-md border border-ink-300 peer-checked:border-champagne-500 peer-checked:bg-champagne-500">
-                      {billingSame && <Check className="h-3 w-3 text-warmwhite" />}
-                    </span>
-                    <span className="text-sm text-ink-800">Billing address is the same as shipping address</span>
-                  </label>
-                  {!billingSame && (
-                    <div className="mt-4 rounded-xl bg-cream p-4 text-sm text-ink-600">
-                      Please enter your billing details — this is a demo and the form is omitted for brevity.
-                    </div>
-                  )}
-                  <div className="mt-6 flex gap-3">
-                    <button onClick={prev} className="btn-ghost">Back</button>
-                    <button onClick={next} className="btn-primary flex-1">Continue to Payment</button>
-                  </div>
                 </motion.div>
               )}
 
               {step === 'payment' && (
                 <motion.div key="payment" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <h2 className="mb-5 flex items-center gap-2 font-display text-xl font-medium text-ink-900">
-                    <CreditCard className="h-5 w-5 text-champagne-600" /> Payment Method
-                  </h2>
-                  <div className="rounded-2xl bg-cream/70 p-4 text-sm text-ink-600">
-                    This is a demo store — no real payment is processed. Use any details below.
-                  </div>
-                  <div className="mt-4 space-y-4">
-                    <Field label="Name on Card" value={payment.cardName} onChange={(v) => setPayment((p) => ({ ...p, cardName: v }))} />
-                    <Field label="Card Number" value={payment.cardNumber} onChange={(v) => setPayment((p) => ({ ...p, cardNumber: v }))} placeholder="4242 4242 4242 4242" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Field label="Expiry" value={payment.expiry} onChange={(v) => setPayment((p) => ({ ...p, expiry: v }))} placeholder="MM/YY" />
-                      <Field label="CVC" value={payment.cvc} onChange={(v) => setPayment((p) => ({ ...p, cvc: v }))} placeholder="123" />
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <h2 className="flex items-center gap-2 font-display text-xl font-medium text-ink-900">
+                      <CreditCard className="h-5 w-5 text-champagne-600" /> Payment Method
+                    </h2>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-cream px-3 py-1.5 text-xs font-medium text-ink-600">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> Hosted securely by Paymob
                     </div>
                   </div>
+
+                  <p className="mb-4 max-w-2xl text-sm text-ink-600">
+                    Choose exactly one payment option. Payment is processed on Paymob’s hosted checkout, so LuxeLayer never sees card details.
+                  </p>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <PaymentOptionCard
+                      title="Cash on Delivery"
+                      description="Send a 20% deposit online. The remaining balance is collected when the order is delivered."
+                      badge="20% Deposit Required"
+                      icon={<Banknote className="h-7 w-7 text-amber-700" />}
+                      selected={paymentMethod === 'cash_on_delivery'}
+                      onSelect={() => setPaymentMethod('cash_on_delivery')}
+                      accent="amber"
+                    >
+                      <div className="mt-4 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-amber-700">
+                        <BadgePercent className="h-3.5 w-3.5" /> Secure deposit checkout
+                      </div>
+                    </PaymentOptionCard>
+
+                    <PaymentOptionCard
+                      title="Credit / Debit Card"
+                      description="Charge the full order total instantly through Paymob using Visa or Mastercard."
+                      badge="Visa + Mastercard"
+                      icon={<CreditCard className="h-7 w-7 text-ink-900" />}
+                      selected={paymentMethod === 'card'}
+                      onSelect={() => setPaymentMethod('card')}
+                      accent="ink"
+                    >
+                      <div className="mt-4 flex items-center gap-3">
+                        <VisaMark />
+                        <MastercardMark />
+                      </div>
+                    </PaymentOptionCard>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl border border-ink-100 bg-cream/60 p-4 text-sm text-ink-600">
+                    {paymentMethod === 'cash_on_delivery'
+                      ? 'A 20% deposit will be charged securely now. Your order status will change to Awaiting COD after successful verification.'
+                      : 'Your full order amount will be charged securely now. After verification, the order status will change to Paid.'}
+                  </div>
+
                   <div className="mt-6 flex gap-3">
                     <button onClick={prev} className="btn-ghost">Back</button>
-                    <button onClick={next} className="btn-primary flex-1">Review Order</button>
-                  </div>
-                </motion.div>
-              )}
-
-              {step === 'review' && (
-                <motion.div key="review" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                  <h2 className="mb-5 font-display text-xl font-medium text-ink-900">Review Your Order</h2>
-
-                  <div className="space-y-4">
-                    <ReviewBlock title="Shipping Address">
-                      {ship.firstName} {ship.lastName}<br />
-                      {ship.address1}{ship.address2 && `, ${ship.address2}`}<br />
-                      {ship.city}, {ship.state} {ship.postalCode}<br />
-                      {ship.country}<br />
-                      {ship.email} · {ship.phone}
-                    </ReviewBlock>
-                    <ReviewBlock title="Shipping Method">
-                      {ship.method === 'standard' ? 'Standard (3-5 business days)' : ship.method === 'express' ? 'Express (2 business days)' : 'Overnight'}
-                    </ReviewBlock>
-                    <ReviewBlock title="Payment">
-                      <span className="flex items-center gap-2"><Lock className="h-3.5 w-3.5 text-emerald-600" /> {payment.cardName || 'Card'} · {payment.cardNumber ? `•••• ${payment.cardNumber.slice(-4)}` : 'Demo card'}</span>
-                    </ReviewBlock>
-                    {giftWrap && (
-                      <ReviewBlock title="Gift Wrap">
-                        <span className="flex items-center gap-2"><Gift className="h-3.5 w-3.5 text-champagne-600" /> Luxury gift wrapping included</span>
-                      </ReviewBlock>
-                    )}
-                  </div>
-
-                  <div className="mt-6 flex gap-3">
-                    <button onClick={prev} className="btn-ghost">Back</button>
-                    <button onClick={placeOrder} disabled={submitting} className="btn-gold flex-1">
+                    <button onClick={submitPayment} disabled={submitting || items.length === 0} className="btn-gold flex-1">
                       <Lock className="h-4 w-4" />
-                      {submitting ? 'Placing Order…' : `Place Order · ${formatPrice(total)}`}
+                      {submitting ? 'Redirecting to Paymob…' : paymentMethod === 'cash_on_delivery' ? 'Pay 20% Deposit via Paymob' : 'Pay Full Amount via Paymob'}
                     </button>
                   </div>
                 </motion.div>
@@ -301,7 +314,6 @@ export function CheckoutPage() {
             </AnimatePresence>
           </div>
 
-          {/* Summary */}
           <div className="lg:col-span-1">
             <div className="sticky top-28 rounded-3xl bg-warmwhite p-6 shadow-luxe-sm ring-1 ring-ink-100">
               <h3 className="font-display text-lg font-medium text-ink-900">Order Summary</h3>
@@ -367,6 +379,82 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
     <div className="flex justify-between">
       <dt className="text-ink-600">{label}</dt>
       <dd className={accent === 'emerald' ? 'text-emerald-700' : 'text-ink-900'}>{value}</dd>
+    </div>
+  );
+}
+
+function PaymentOptionCard({
+  title,
+  description,
+  badge,
+  icon,
+  selected,
+  onSelect,
+  accent,
+  children,
+}: {
+  title: string;
+  description: string;
+  badge: string;
+  icon: React.ReactNode;
+  selected: boolean;
+  onSelect: () => void;
+  accent: 'amber' | 'ink';
+  children: React.ReactNode;
+}) {
+  return (
+    <motion.button
+      type="button"
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.99 }}
+      onClick={onSelect}
+      className={classNames(
+        'text-left rounded-3xl border p-5 transition focus:outline-none',
+        selected
+          ? accent === 'amber'
+            ? 'border-amber-400 bg-amber-50 shadow-[0_18px_40px_rgba(180,83,9,0.10)]'
+            : 'border-ink-900 bg-ink-50 shadow-[0_18px_40px_rgba(17,24,39,0.10)]'
+          : 'border-ink-200 bg-warmwhite hover:border-ink-300 hover:shadow-luxe-sm',
+      )}
+    >
+      <div className="flex items-start gap-4">
+        <div className={classNames('flex h-12 w-12 items-center justify-center rounded-2xl', accent === 'amber' ? 'bg-amber-100' : 'bg-ink-100')}>
+          {icon}
+        </div>
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-lg font-medium text-ink-900">{title}</h3>
+            <span className={classNames('rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em]', accent === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-ink-100 text-ink-700')}>
+              {badge}
+            </span>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-ink-600">{description}</p>
+          {children}
+        </div>
+      </div>
+      <div className={classNames('mt-5 flex h-5 w-5 items-center justify-center rounded-full border', selected ? 'border-current' : 'border-ink-300')}>
+        {selected && <div className={classNames('h-2.5 w-2.5 rounded-full', accent === 'amber' ? 'bg-amber-600' : 'bg-ink-900')} />}
+      </div>
+    </motion.button>
+  );
+}
+
+function VisaMark() {
+  return (
+    <div className="flex h-10 w-20 items-center justify-center rounded-xl border border-[#1A1F71]/20 bg-white px-3 text-sm font-black tracking-[0.2em] text-[#1A1F71] shadow-sm">
+      VISA
+    </div>
+  );
+}
+
+function MastercardMark() {
+  return (
+    <div className="flex h-10 w-28 items-center justify-center rounded-xl border border-ink-200 bg-white px-3 shadow-sm">
+      <div className="relative mr-2 h-5 w-8">
+        <span className="absolute left-0 top-0 h-5 w-5 rounded-full bg-[#EB001B] opacity-90" />
+        <span className="absolute left-3 top-0 h-5 w-5 rounded-full bg-[#F79E1B] opacity-90" />
+      </div>
+      <span className="text-[11px] font-semibold tracking-[0.18em] text-ink-700">Mastercard</span>
     </div>
   );
 }

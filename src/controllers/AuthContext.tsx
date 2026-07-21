@@ -19,51 +19,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const PROFILE_KEY = 'luxelayer.profile.cache';
-const DEMO_ADMIN_EMAIL = 'mennarashwan@gmail.com';
-const DEMO_ADMIN_PASSWORD = '1010abab';
-const DEMO_ADMIN_SESSION_KEY = 'luxelayer.demo-admin.session';
-
-function buildDemoAdminProfile(): Profile {
-  return {
-    id: 'demo-admin-user',
-    email: DEMO_ADMIN_EMAIL,
-    first_name: 'Mennar',
-    last_name: 'Rashwan',
-    avatar_url: null,
-    phone: null,
-    is_admin: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-}
-
-function buildDemoAdminSession(profile: Profile): Session {
-  return {
-    access_token: 'demo-admin-access-token',
-    token_type: 'bearer',
-    expires_in: 3600,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    refresh_token: 'demo-admin-refresh-token',
-    user: {
-      id: profile.id,
-      aud: 'authenticated',
-      role: 'authenticated',
-      email: profile.email,
-      phone: null,
-      created_at: profile.created_at,
-      updated_at: profile.updated_at,
-      last_sign_in_at: profile.updated_at,
-      app_metadata: { provider: 'demo', providers: ['demo'] },
-      user_metadata: {
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-      },
-      identities: [],
-      factors: [],
-    },
-  } as Session;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -85,23 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-
-    try {
-      const storedDemoSession = sessionStorage.getItem(DEMO_ADMIN_SESSION_KEY);
-      if (storedDemoSession) {
-        const parsed = JSON.parse(storedDemoSession) as { profile: Profile; session: Session };
-        if (mounted) {
-          setSession(parsed.session);
-          setProfile(parsed.profile);
-          setLoading(false);
-        }
-        return () => {
-          mounted = false;
-        };
-      }
-    } catch {
-      // ignore
-    }
 
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
@@ -137,21 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn: AuthContextValue['signIn'] = async (email, password) => {
-    if (email.trim().toLowerCase() === DEMO_ADMIN_EMAIL && password === DEMO_ADMIN_PASSWORD) {
-      const profile = buildDemoAdminProfile();
-      const session = buildDemoAdminSession(profile);
-      setSession(session);
-      setProfile(profile);
-      setLoading(false);
-      try {
-        sessionStorage.setItem(DEMO_ADMIN_SESSION_KEY, JSON.stringify({ profile, session }));
-        sessionStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-      } catch {
-        // ignore storage errors
-      }
-      return { error: null };
-    }
-
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error?.message ?? null };
   };
@@ -172,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     try {
-      sessionStorage.removeItem(DEMO_ADMIN_SESSION_KEY);
       sessionStorage.removeItem(PROFILE_KEY);
     } catch {
       // ignore

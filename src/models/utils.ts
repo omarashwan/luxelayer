@@ -1,9 +1,7 @@
-export function formatPrice(value: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(value);
+import { formatPrice as formatCurrency } from '../lib/currency';
+
+export function formatPrice(value: number, currency?: 'USD' | 'EGP' | 'EUR'): string {
+  return formatCurrency(value, currency);
 }
 
 export function classNames(...args: (string | false | null | undefined)[]): string {
