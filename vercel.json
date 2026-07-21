@@ -1,7 +1,17 @@
 {
+  "version": 2,
+  "functions": {
+    "api/payments/[...path].js": {
+      "runtime": "nodejs20.x"
+    }
+  },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/payments/(.*)",
+      "destination": "/api/payments/[...path].js"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
   ]
